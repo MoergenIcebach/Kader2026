@@ -282,6 +282,54 @@
     .pill-MID { background: var(--purple-dim); color: var(--purple); }
     .pill-FWD { background: var(--red-dim);    color: #ff453a; }
 
+    /* ─── PLAYER PHOTO ─── */
+    .player-photo {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      flex-shrink: 0;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+    }
+    .player-photo-fb {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-2);
+    }
+    .slot-photo {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      flex-shrink: 0;
+      background: var(--bg-3);
+    }
+    .slot-photo-fb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--bg-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      font-weight: 700;
+      color: var(--text-2);
+    }
+
     /* ─── RIGHT: BUILDER PANEL ─── */
     .builder-panel {
       flex: 1;
@@ -709,6 +757,53 @@
 
 <script>
 /* ════════════════════════════════════════════
+   PLAYER PHOTOS (Wikipedia Commons)
+════════════════════════════════════════════ */
+const PLAYER_PHOTOS = {
+  'p1':  'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/OliverBaumann_%28cropped%29.jpg/100px-OliverBaumann_%28cropped%29.jpg',
+  'p2':  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Marc-Andre_Ter_Stegen_ACCI_FCBARCELONA_Turisme_Catalunya_gira_pretemporada_CATPRESS.jpg/100px-Marc-Andre_Ter_Stegen_ACCI_FCBARCELONA_Turisme_Catalunya_gira_pretemporada_CATPRESS.jpg',
+  'p3':  'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Alexander_nuebel.jpg/100px-Alexander_nuebel.jpg',
+  'p4':  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Noah_Atubolu.jpg/100px-Noah_Atubolu.jpg',
+  'p6':  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/FC_RB_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%282026-01-06_Testspiel%29_14.jpg/100px-FC_RB_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%282026-01-06_Testspiel%29_14.jpg',
+  'p7':  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/ManCity20240722-051_%28Ortega%29.jpg/100px-ManCity20240722-051_%28Ortega%29.jpg',
+  'p9':  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2078_LR10_by_Stepro_%28cropped%29.jpg/100px-2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2078_LR10_by_Stepro_%28cropped%29.jpg',
+  'p10': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Jonathan_Tah_2019.jpg/100px-Jonathan_Tah_2019.jpg',
+  'p11': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/2023-08-12_TSV_Schott_Mainz_gegen_Borussia_Dortmund_%28DFB-Pokal_2023-24%29_by_Sandro_Halank%E2%80%93069.jpg/100px-2023-08-12_TSV_Schott_Mainz_gegen_Borussia_Dortmund_%28DFB-Pokal_2023-24%29_by_Sandro_Halank%E2%80%93069.jpg',
+  'p12': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2658_%28cropped%29.jpg/100px-2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2658_%28cropped%29.jpg',
+  'p13': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/20180602_FIFA_Friendly_Match_Austria_vs._Germany_Antonio_R%C3%BCdiger_850_0711.jpg/100px-20180602_FIFA_Friendly_Match_Austria_vs._Germany_Antonio_R%C3%BCdiger_850_0711.jpg',
+  'p14': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Waldemar_anton_%28cropped%29.jpg/100px-Waldemar_anton_%28cropped%29.jpg',
+  'p15': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Milan_Lecce_2023_Thiaw.jpg/100px-Milan_Lecce_2023_Thiaw.jpg',
+  'p16': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Ridle_Baku_2020-09-20_Fu%C3%9Fball%2C_M%C3%A4nner%2C_1._Bundesliga%2C_RB_Leipzig_-_1._FSV_Mainz_05_1DX_1394_by_Stepro_%28cropped%29.jpg/100px-Ridle_Baku_2020-09-20_Fu%C3%9Fball%2C_M%C3%A4nner%2C_1._Bundesliga%2C_RB_Leipzig_-_1._FSV_Mainz_05_1DX_1394_by_Stepro_%28cropped%29.jpg',
+  'p17': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Maxi_mittelstaedt.jpg/100px-Maxi_mittelstaedt.jpg',
+  'p19': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Yann_Aurel_Bisseck_1._FC_K%C3%B6ln_%2833947266338%29_%28cropped%29.jpg/100px-Yann_Aurel_Bisseck_1._FC_K%C3%B6ln_%2833947266338%29_%28cropped%29.jpg',
+  'p21': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Benjamin_Henrichs_for_RB_Leipzig_in_2022_%28cropped%29.jpg/100px-Benjamin_Henrichs_for_RB_Leipzig_in_2022_%28cropped%29.jpg',
+  'p22': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2073_LR10_by_Stepro.jpg/100px-2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2073_LR10_by_Stepro.jpg',
+  'p24': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/20180602_FIFA_Friendly_Match_Austria_vs._Germany_Niklas_S%C3%BCle_850_0725.jpg/100px-20180602_FIFA_Friendly_Match_Austria_vs._Germany_Niklas_S%C3%BCle_850_0725.jpg',
+  'p25': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Robin_Gosens_01_%28cropped%29.jpg/100px-Robin_Gosens_01_%28cropped%29.jpg',
+  'p27': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/FC_RB_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%282026-01-06_Testspiel%29_34.jpg/100px-FC_RB_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%282026-01-06_Testspiel%29_34.jpg',
+  'p28': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/FC_Red_Bull_Salzburg_gegen_Bayern_M%C3%BCnchen_%282025-01-06_Testspiel%29_27.jpg/100px-FC_Red_Bull_Salzburg_gegen_Bayern_M%C3%BCnchen_%282025-01-06_Testspiel%29_27.jpg',
+  'p29': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Felix_Nmecha_2021.jpg/100px-Felix_Nmecha_2021.jpg',
+  'p30': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Jamal_Musiala_2022_%28cropped%29.jpg/100px-Jamal_Musiala_2022_%28cropped%29.jpg',
+  'p31': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Florian_Wirtz_04012026_%283%29_%28extracted%29.jpg/100px-Florian_Wirtz_04012026_%283%29_%28extracted%29.jpg',
+  'p32': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Angelo_Stiller_2023.jpg/100px-Angelo_Stiller_2023.jpg',
+  'p33': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Robert_Andrich%2C_2022-07-31%2C_Saisoner%C3%B6ffnung_Bayer_04%2C_Leverkusen_%281%29_%28cropped%29.jpg/100px-Robert_Andrich%2C_2022-07-31%2C_Saisoner%C3%B6ffnung_Bayer_04%2C_Leverkusen_%281%29_%28cropped%29.jpg',
+  'p34': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/20161011_U21_AUT_GER_9328_%28cropped%29.jpg/100px-20161011_U21_AUT_GER_9328_%28cropped%29.jpg',
+  'p36': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/FC_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%28Championsleague_Achtelfinale_Hinspiel_16._Februar_2022%29_63.jpg/100px-FC_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%28Championsleague_Achtelfinale_Hinspiel_16._Februar_2022%29_63.jpg',
+  'p37': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Jamie_leweling.jpg/100px-Jamie_leweling.jpg',
+  'p40': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Pascal_Gross.jpg/100px-Pascal_Gross.jpg',
+  'p41': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Chris_fuehrich.jpg/100px-Chris_fuehrich.jpg',
+  'p42': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2066_LR10_by_Stepro.jpg/100px-2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2066_LR10_by_Stepro.jpg',
+  'p45': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Anton_Stach_13092025_%281%29.jpg/100px-Anton_Stach_13092025_%281%29.jpg',
+  'p46': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Emre_Can_in_2023.jpg/100px-Emre_Can_in_2023.jpg',
+  'p47': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2059_LR10_by_Stepro.jpg/100px-2019-06-11_Fu%C3%9Fball%2C_M%C3%A4nner%2C_L%C3%A4nderspiel%2C_Deutschland-Estland_StP_2059_LR10_by_Stepro.jpg',
+  'p49': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Deniz_undav.jpg/100px-Deniz_undav.jpg',
+  'p50': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Serge_Gnabry_WC2022.jpg/100px-Serge_Gnabry_WC2022.jpg',
+  'p51': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/FC_Red_Bull_Salzburg_gegen_Bayern_M%C3%BCnchen_%282025-01-06_Testspiel%29_22.jpg/100px-FC_Red_Bull_Salzburg_gegen_Bayern_M%C3%BCnchen_%282025-01-06_Testspiel%29_22.jpg',
+  'p54': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Kleindienst%2C_Tim_Heidenheim_16-17_%283%29_WP.jpg/100px-Kleindienst%2C_Tim_Heidenheim_16-17_%283%29_WP.jpg',
+  'p55': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/NiclasF%C3%BCllkrug_%28cropped%29.jpg/100px-NiclasF%C3%BCllkrug_%28cropped%29.jpg',
+};
+
+/* ════════════════════════════════════════════
    CLUB LOGO MAPPING (football-data.org CDN)
 ════════════════════════════════════════════ */
 const LOGO_BASE = 'https://crests.football-data.org/';
@@ -919,6 +1014,29 @@ function makePoolLogo(club) {
   return `<div class="club-logo-fallback">${clubInitials(club)}</div>`;
 }
 
+// Player photo (circular headshot) — falls back to club logo badge
+function makePlayerPhoto(pid, club, size = 36, cls = 'player-photo') {
+  const photoUrl = PLAYER_PHOTOS[pid];
+  const fbCls    = cls === 'player-photo' ? 'player-photo-fb' : 'slot-photo-fb';
+  if (photoUrl) {
+    const key = registerLogo(pid + '_photo', size, fbCls);
+    // fallback: show club initials circle
+    return `<img class="${cls}" src="${photoUrl}" alt=""
+      onerror="_logoError('${key}',this)"
+      width="${size}" height="${size}" />`;
+  }
+  // No photo → show club logo circle as fallback
+  const logoU = logoUrl(club);
+  if (logoU) {
+    const key2 = registerLogo(club + '_slot', size, fbCls);
+    return `<img class="${cls}" src="${logoU}" alt=""
+      onerror="_logoError('${key2}',this)"
+      style="border-radius:50%;object-fit:contain;background:var(--bg-3)"
+      width="${size}" height="${size}" />`;
+  }
+  return `<div class="${fbCls}" style="width:${size}px;height:${size}px">${clubInitials(club)}</div>`;
+}
+
 /* ════════════════════════════════════════════
    BUILD POOL
 ════════════════════════════════════════════ */
@@ -958,7 +1076,7 @@ function buildPool() {
       card.dataset.group = g.key;
       card.draggable = true;
       card.innerHTML = `
-        ${makePoolLogo(p.club)}
+        ${makePlayerPhoto(p.id, p.club, 36, 'player-photo')}
         <div class="player-info">
           <div class="player-name">${p.name}</div>
           <div class="player-club">${p.club}</div>
@@ -1017,7 +1135,7 @@ function renderKaderSlot(slotId) {
     el.innerHTML = `
       <div class="slot-pos-label">${slot.l}</div>
       <div class="slot-body">
-        ${makeLogo(p.club, 22, 'slot-logo')}
+        ${makePlayerPhoto(p.id, p.club, 28, 'slot-photo')}
         <div class="slot-info">
           <div class="sname">${p.name}</div>
           <div class="sclub">${p.pos}</div>
@@ -1060,7 +1178,7 @@ function renderXISlot(idx) {
     slot.innerHTML = `
       <div class="slot-pos-label">${posLabel}</div>
       <div class="slot-body">
-        ${makeLogo(p.club, 20, 'slot-logo')}
+        ${makePlayerPhoto(p.id, p.club, 28, 'slot-photo')}
         <div class="slot-info"><div class="sname">${p.name}</div></div>
       </div>
       <button class="slot-remove" onclick="removeFromXI(${idx})">✕</button>
