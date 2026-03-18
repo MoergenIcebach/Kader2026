@@ -1425,16 +1425,31 @@ function clearXI() {
 /* ════════════════════════════════════════════
    EXPORT
 ════════════════════════════════════════════ */
-function downloadPNG() {
-  if (!usedInKader().length) { alert('Your Kader is empty!'); return; }
-  const userName = document.getElementById('user-name').value.trim();
-  html2canvas(document.getElementById('export-area'), {
+function captureFullExport() {
+  const el = document.getElementById('export-area');
+  const prev = { overflow: el.style.overflow, height: el.style.height, maxHeight: el.style.maxHeight };
+  el.style.overflow = 'visible';
+  el.style.height = el.scrollHeight + 'px';
+  el.style.maxHeight = 'none';
+  return html2canvas(el, {
     backgroundColor: '#000000',
     scale: 2,
     useCORS: true,
     allowTaint: true,
     logging: false,
+    height: el.scrollHeight,
+    windowHeight: el.scrollHeight,
   }).then(canvas => {
+    el.style.overflow = prev.overflow;
+    el.style.height = prev.height;
+    el.style.maxHeight = prev.maxHeight;
+    return canvas;
+  });
+}
+function downloadPNG() {
+  if (!usedInKader().length) { alert('Your Kader is empty!'); return; }
+  const userName = document.getElementById('user-name').value.trim();
+  captureFullExport().then(canvas => {
     const a = document.createElement('a');
     const slug = userName ? userName.replace(/\s+/g, '_') : 'My';
     a.download = `Germany_2026_${slug}_Kader.png`;
@@ -1445,13 +1460,7 @@ function downloadPNG() {
 }
 function downloadPDF() {
   if (!usedInKader().length) { alert('Your Kader is empty!'); return; }
-  html2canvas(document.getElementById('export-area'), {
-    backgroundColor: '#000000',
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-  }).then(canvas => {
+  captureFullExport().then(canvas => {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('landscape', 'mm', 'a4');
     pdf.setFillColor(0, 0, 0);
