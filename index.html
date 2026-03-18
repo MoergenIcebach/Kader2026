@@ -729,13 +729,117 @@
     .sortable-ghost { opacity: 0.25; }
     .sortable-chosen { transform: scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 999; }
 
+    /* ─── MOBILE TAB BAR (hidden on desktop) ─── */
+    .mobile-tabs { display: none; }
+
     /* ─── RESPONSIVE ─── */
-    @media (max-width: 860px) {
-      .app { flex-direction: column; height: auto; overflow: visible; }
-      .pool-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); height: 280px; }
-      .builder-panel { height: auto; }
-      #export-area { overflow-y: visible; }
-      .xi-slot { width: 72px; min-height: 62px; }
+    @media (max-width: 768px) {
+      /* Header */
+      header { padding: 0 16px; height: 52px; }
+      .header-dfb-logo { height: 32px; }
+      .header-badge { display: none; }
+      .header-title { font-size: 0.85rem; }
+
+      /* App: single column, full height minus header+tabbar */
+      .app {
+        flex-direction: column;
+        height: calc(100dvh - 52px - 56px);
+        overflow: hidden;
+        gap: 0;
+      }
+
+      /* Pool panel: full width, full height, initially visible */
+      .pool-panel {
+        width: 100%;
+        height: 100%;
+        border-right: none;
+        border-bottom: none;
+        flex-shrink: 0;
+      }
+
+      /* Builder panel: full width, full height, initially hidden */
+      .builder-panel {
+        width: 100%;
+        height: 100%;
+        flex-shrink: 0;
+        display: none;
+      }
+      .builder-panel.mobile-active { display: flex; }
+
+      #export-area {
+        overflow-y: auto;
+        padding: 16px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Controls bar compact */
+      .controls-bar {
+        padding: 10px 16px;
+        gap: 6px;
+      }
+      .btn { padding: 7px 12px; font-size: 0.72rem; }
+      .status-msg { display: none; }
+
+      /* Kader grid tighter */
+      .kader-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 5px;
+        margin-bottom: 24px;
+      }
+      #kader-section { margin-bottom: 0; }
+
+      /* XI slots: flex to fill row width naturally */
+      .xi-slot {
+        flex: 1;
+        min-width: 48px;
+        max-width: 80px;
+        width: auto;
+        min-height: 64px;
+        padding: 5px 3px;
+      }
+      .xi-slot .slot-info .sname { font-size: 0.6rem; }
+      .xi-row { gap: 4px; }
+      .pitch { padding: 14px 8px 18px; }
+
+      /* Name bar compact */
+      .name-bar { margin-bottom: 14px; padding-bottom: 14px; }
+      .name-display { display: none; }
+
+      /* Tab bar */
+      .mobile-tabs {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: rgba(17,17,17,0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid var(--border);
+        z-index: 200;
+      }
+      .tab-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--text-3);
+        transition: color 0.15s;
+        padding: 6px 0;
+      }
+      .tab-btn.active { color: var(--gold); }
+      .tab-icon { font-size: 1.1rem; line-height: 1; }
+      .tab-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.04em; }
+
+      /* Scroll snap for section navigation */
+      #xi-section { scroll-margin-top: 16px; }
+      #kader-section { scroll-margin-top: 16px; }
     }
 
     /* ─── SCROLLBAR ─── */
@@ -787,14 +891,16 @@
       </div>
 
       <!-- ─── KADER ─── -->
-      <div class="section-head">
-        <div class="section-title">Kader (26 + 3 Provisional)</div>
-        <span class="counter-badge" id="kader-badge">0 / 29</span>
+      <div id="kader-section">
+        <div class="section-head">
+          <div class="section-title">Kader (26 + 3 Provisional)</div>
+          <span class="counter-badge" id="kader-badge">0 / 29</span>
+        </div>
+        <div class="kader-grid" id="kader-grid"></div>
       </div>
-      <div class="kader-grid" id="kader-grid"></div>
 
       <!-- ─── STARTING XI ─── -->
-      <div class="xi-wrapper">
+      <div class="xi-wrapper" id="xi-section">
         <div class="section-head">
           <div class="section-title">Starting XI</div>
           <span class="counter-badge" id="xi-badge">0 / 11</span>
@@ -821,6 +927,22 @@
   </div>
 
 </div><!-- /.app -->
+
+<!-- ══════════════ MOBILE TAB BAR ══════════════ -->
+<nav class="mobile-tabs" id="mobile-tabs">
+  <button class="tab-btn active" data-tab="pool" onclick="switchTab('pool')">
+    <span class="tab-icon">👥</span>
+    <span class="tab-label">Pool</span>
+  </button>
+  <button class="tab-btn" data-tab="kader" onclick="switchTab('kader')">
+    <span class="tab-icon">📋</span>
+    <span class="tab-label">Kader</span>
+  </button>
+  <button class="tab-btn" data-tab="xi" onclick="switchTab('xi')">
+    <span class="tab-icon">⚽</span>
+    <span class="tab-label">Starting XI</span>
+  </button>
+</nav>
 
 <script>
 /* ════════════════════════════════════════════
@@ -1552,6 +1674,29 @@ function downloadPDF() {
     pdf.save('Germany_2026_MyKader.pdf');
     showStatus('PDF saved ✓');
   });
+}
+
+/* ════════════════════════════════════════════
+   MOBILE TABS
+════════════════════════════════════════════ */
+function switchTab(tab) {
+  if (window.innerWidth > 768) return;
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  const pool    = document.querySelector('.pool-panel');
+  const builder = document.querySelector('.builder-panel');
+  if (tab === 'pool') {
+    pool.style.display    = '';
+    builder.classList.remove('mobile-active');
+  } else {
+    pool.style.display    = 'none';
+    builder.classList.add('mobile-active');
+    const target = tab === 'kader'
+      ? document.getElementById('kader-section')
+      : document.getElementById('xi-section');
+    if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  }
 }
 
 /* ════════════════════════════════════════════
