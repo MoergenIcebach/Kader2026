@@ -241,12 +241,6 @@
       color: var(--text-2);
     }
     .player-info { flex: 1; min-width: 0; }
-    .player-name-row {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      min-width: 0;
-    }
     .player-name {
       font-size: 0.78rem;
       font-weight: 600;
@@ -255,30 +249,14 @@
       overflow: hidden;
       text-overflow: ellipsis;
       line-height: 1.3;
-      min-width: 0;
     }
-    .inline-logo {
-      width: 16px;
-      height: 16px;
-      object-fit: contain;
-      flex-shrink: 0;
-      border-radius: 2px;
-      background: var(--bg-3);
-      opacity: 0.85;
-    }
-    .inline-logo-fb {
-      width: 16px;
-      height: 16px;
-      border-radius: 2px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.42rem;
-      font-weight: 800;
-      background: var(--bg-3);
+    .player-club {
+      font-size: 0.62rem;
       color: var(--text-3);
-      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
     }
     .pos-pill {
       flex-shrink: 0;
@@ -804,100 +782,53 @@
 
 <script>
 /* ════════════════════════════════════════════
-   PLAYER PHOTOS — async via Wikipedia REST API
-   PLAYER_PHOTOS is populated on load, never hardcoded
+   PLAYER PHOTOS — async via SofaScore search API
+   Consistent portrait-style headshots for all players
 ════════════════════════════════════════════ */
 const PLAYER_PHOTOS = {};
+function _wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// Wikipedia article names for each player
-const PLAYER_WIKI_NAMES = {
-  'p1':  'Oliver Baumann (footballer)',
-  'p2':  'Marc-André ter Stegen',
-  'p3':  'Alexander Nübel',
-  'p4':  'Noah Atubolu',
-  'p6':  'Jonas Urbig',
-  'p7':  'Stefan Ortega Moreno',
-  'p8':  'Moritz Nicolas',
-  'p9':  'Joshua Kimmich',
-  'p10': 'Jonathan Tah',
-  'p11': 'Nico Schlotterbeck',
-  'p12': 'David Raum',
-  'p13': 'Antonio Rüdiger',
-  'p14': 'Waldemar Anton',
-  'p15': 'Malick Thiaw',
-  'p16': 'Ridle Baku',
-  'p17': 'Maximilian Mittelstädt',
-  'p18': 'Nathaniel Brown (footballer)',
-  'p19': 'Yann Bisseck',
-  'p20': 'Robin Koch (footballer)',
-  'p21': 'Benjamin Henrichs',
-  'p22': 'Thilo Kehrer',
-  'p23': 'Nnamdi Collins',
-  'p24': 'Niklas Süle',
-  'p25': 'Robin Gosens',
-  'p27': 'Aleksandar Pavlović (footballer)',
-  'p28': 'Leon Goretzka',
-  'p29': 'Felix Nmecha',
-  'p30': 'Jamal Musiala',
-  'p31': 'Florian Wirtz',
-  'p32': 'Angelo Stiller',
-  'p33': 'Robert Andrich',
-  'p34': 'Nadiem Amiri',
-  'p36': 'Karim Adeyemi',
-  'p37': 'Jamie Leweling',
-  'p38': 'Tom Bischof',
-  'p40': 'Pascal Groß',
-  'p41': 'Chris Führich',
-  'p42': 'Julian Brandt',
-  'p44': 'Assan Ouédraogo',
-  'p45': 'Anton Stach',
-  'p46': 'Emre Can',
-  'p47': 'Kai Havertz',
-  'p48': 'Nick Woltemade',
-  'p49': 'Deniz Undav',
-  'p50': 'Serge Gnabry',
-  'p51': 'Leroy Sané',
-  'p52': 'Jonathan Burkardt',
-  'p53': 'Maximilian Beier',
-  'p54': 'Tim Kleindienst',
-  'p55': 'Niclas Füllkrug',
-};
+function _updatePhotoInCard(pid, url) {
+  const card = document.querySelector(`.player-card[data-pid="${pid}"]`);
+  if (!card) return;
+  const old = card.querySelector('.player-photo, .player-photo-fb');
+  if (!old) return;
+  const img = new Image(36, 36);
+  img.className = 'player-photo';
+  img.src = url;
+  img.onerror = () => {
+    const fb = document.createElement('div');
+    fb.className = 'player-photo-fb';
+    fb.style.cssText = 'width:36px;height:36px';
+    fb.textContent = clubInitials(PLAYERS.find(p => p.id === pid)?.club || '');
+    img.replaceWith(fb);
+  };
+  old.replaceWith(img);
+}
+
+async function _loadOne(pid, name) {
+  try {
+    const r = await fetch(
+      'https://api.sofascore.com/api/v1/search/all?q=' + encodeURIComponent(name)
+    );
+    if (!r.ok) return;
+    const d = await r.json();
+    const found = (d.results || []).find(x => x.type === 'player');
+    if (!found?.entity?.id) return;
+    const url = 'https://api.sofascore.app/api/v1/player/' + found.entity.id + '/image';
+    PLAYER_PHOTOS[pid] = url;
+    _updatePhotoInCard(pid, url);
+  } catch(e) {}
+}
 
 async function loadPhotosAsync() {
-  for (const [pid, name] of Object.entries(PLAYER_WIKI_NAMES)) {
-    try {
-      const r = await fetch(
-        'https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(name),
-        { headers: { 'Api-User-Agent': 'Kader2026/1.0' } }
-      );
-      if (!r.ok) { await _wait(60); continue; }
-      const d = await r.json();
-      const url = d.thumbnail?.source;
-      if (!url) { await _wait(60); continue; }
-      PLAYER_PHOTOS[pid] = url;
-      // Update the pool card if it exists
-      const card = document.querySelector(`.player-card[data-pid="${pid}"]`);
-      if (card) {
-        const old = card.querySelector('.player-photo, .player-photo-fb');
-        if (old) {
-          const img = new Image(36, 36);
-          img.className = 'player-photo';
-          img.src = url;
-          img.onerror = () => {
-            const fb = document.createElement('div');
-            fb.className = 'player-photo-fb';
-            fb.style.cssText = 'width:36px;height:36px';
-            fb.textContent = clubInitials(PLAYERS.find(p => p.id === pid)?.club || '');
-            img.replaceWith(fb);
-          };
-          old.replaceWith(img);
-        }
-      }
-    } catch(e) {}
-    await _wait(80);
+  // Process in batches of 4 concurrent requests
+  for (let i = 0; i < PLAYERS.length; i += 4) {
+    const batch = PLAYERS.slice(i, i + 4);
+    await Promise.allSettled(batch.map(p => _loadOne(p.id, p.name)));
+    await _wait(350);
   }
 }
-function _wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ════════════════════════════════════════════
    CLUB LOGO MAPPING (football-data.org CDN)
@@ -1185,10 +1116,8 @@ function buildPool() {
       card.innerHTML = `
         ${makePlayerPhoto(p.id, p.club, 36, 'player-photo')}
         <div class="player-info">
-          <div class="player-name-row">
-            <div class="player-name">${p.name}</div>
-            ${makeInlineLogo(p.club)}
-          </div>
+          <div class="player-name">${p.name}</div>
+          <div class="player-club">${p.club}</div>
         </div>
         <span class="pos-pill pill-${g.key}">${p.pos.split('/')[0].trim()}</span>
       `;
