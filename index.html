@@ -619,14 +619,33 @@
       display: none; /* keep pitch clean */
     }
 
-    /* formation tag */
-    .formation-tag {
+    /* formation picker */
+    .formation-picker {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .formation-btn {
       font-size: 0.64rem;
       font-weight: 600;
-      letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.3);
-      text-align: right;
-      margin-bottom: 6px;
+      letter-spacing: 0.07em;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .formation-btn:hover {
+      border-color: var(--border-md);
+      color: var(--text-2);
+    }
+    .formation-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(207,176,120,0.08);
     }
 
     /* ─── CONTROLS BAR ─── */
@@ -781,37 +800,10 @@
           <span class="counter-badge" id="xi-badge">0 / 11</span>
         </div>
         <div class="xi-hint">Ziehe Spieler aus dem Kader auf die Positionen</div>
-        <div class="formation-tag">4 – 2 – 3 – 1</div>
+        <div class="formation-picker" id="formation-picker"></div>
         <div class="pitch" id="xi-pitch">
           <div class="pitch-line-top"></div>
           <div class="pitch-line-bot"></div>
-
-          <!-- ST -->
-          <div class="xi-row">
-            <div class="xi-slot" data-pos="ST" data-xi-index="0"><div class="slot-pos-label">ST</div></div>
-          </div>
-          <!-- LW CAM RW -->
-          <div class="xi-row">
-            <div class="xi-slot" data-pos="LW"  data-xi-index="1"><div class="slot-pos-label">LW</div></div>
-            <div class="xi-slot" data-pos="CAM" data-xi-index="2"><div class="slot-pos-label">CAM</div></div>
-            <div class="xi-slot" data-pos="RW"  data-xi-index="3"><div class="slot-pos-label">RW</div></div>
-          </div>
-          <!-- DM DM -->
-          <div class="xi-row">
-            <div class="xi-slot" data-pos="DM" data-xi-index="4"><div class="slot-pos-label">DM</div></div>
-            <div class="xi-slot" data-pos="DM" data-xi-index="5"><div class="slot-pos-label">DM</div></div>
-          </div>
-          <!-- RB CB CB LB -->
-          <div class="xi-row">
-            <div class="xi-slot" data-pos="RB" data-xi-index="6"><div class="slot-pos-label">RB</div></div>
-            <div class="xi-slot" data-pos="CB" data-xi-index="7"><div class="slot-pos-label">CB</div></div>
-            <div class="xi-slot" data-pos="CB" data-xi-index="8"><div class="slot-pos-label">CB</div></div>
-            <div class="xi-slot" data-pos="LB" data-xi-index="9"><div class="slot-pos-label">LB</div></div>
-          </div>
-          <!-- GK -->
-          <div class="xi-row">
-            <div class="xi-slot" data-pos="GK" data-xi-index="10"><div class="slot-pos-label">GK</div></div>
-          </div>
         </div>
       </div>
 
@@ -1049,6 +1041,16 @@ KADER_SLOTS.forEach(s => kaderData[s.id] = null);
 const XI_SIZE = 11;
 const xiData  = new Array(XI_SIZE).fill(null);
 
+const FORMATIONS = {
+  '4-2-3-1': { label: '4–2–3–1', rows: [['ST'],['LW','CAM','RW'],['DM','DM'],['RB','CB','CB','LB'],['GK']] },
+  '4-3-3':   { label: '4–3–3',   rows: [['LW','ST','RW'],['CM','CM','CM'],['RB','CB','CB','LB'],['GK']] },
+  '4-4-2':   { label: '4–4–2',   rows: [['ST','ST'],['LM','CM','CM','RM'],['RB','CB','CB','LB'],['GK']] },
+  '3-5-2':   { label: '3–5–2',   rows: [['ST','ST'],['LW','CM','CAM','CM','RW'],['CB','CB','CB'],['GK']] },
+  '3-4-3':   { label: '3–4–3',   rows: [['LW','ST','RW'],['LM','CM','CM','RM'],['CB','CB','CB'],['GK']] },
+  '5-3-2':   { label: '5–3–2',   rows: [['ST','ST'],['CM','CAM','CM'],['LWB','CB','CB','CB','RWB'],['GK']] },
+};
+let currentFormation = '4-2-3-1';
+
 /* ════════════════════════════════════════════
    HELPERS
 ════════════════════════════════════════════ */
@@ -1284,12 +1286,52 @@ function renderKaderSlot(slotId) {
 /* ════════════════════════════════════════════
    BUILD XI
 ════════════════════════════════════════════ */
-function buildXI() {
-  document.querySelectorAll('.xi-slot').forEach(slot => {
-    const idx = parseInt(slot.dataset.xiIndex);
-    attachSlotEvents(slot, idx, 'xi');
-    renderXISlot(idx);
+function buildFormationPicker() {
+  const picker = document.getElementById('formation-picker');
+  picker.innerHTML = '';
+  Object.entries(FORMATIONS).forEach(([key, f]) => {
+    const btn = document.createElement('button');
+    btn.className = 'formation-btn' + (key === currentFormation ? ' active' : '');
+    btn.dataset.formation = key;
+    btn.textContent = f.label;
+    btn.onclick = () => setFormation(key);
+    picker.appendChild(btn);
   });
+}
+
+function setFormation(key) {
+  currentFormation = key;
+  xiData.fill(null);
+  buildXI();
+  updatePoolUsed();
+  updateBadges();
+  document.querySelectorAll('.formation-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.formation === key)
+  );
+  showStatus('Formation: ' + FORMATIONS[key].label);
+}
+
+function buildXI() {
+  const pitch = document.getElementById('xi-pitch');
+  pitch.querySelectorAll('.xi-row').forEach(r => r.remove());
+  const formation = FORMATIONS[currentFormation];
+  let idx = 0;
+  formation.rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'xi-row';
+    row.forEach(pos => {
+      const slot = document.createElement('div');
+      slot.className = 'xi-slot';
+      slot.dataset.pos = pos;
+      slot.dataset.xiIndex = idx;
+      slot.innerHTML = `<div class="slot-pos-label">${pos}</div><div class="slot-drop-hint">drag here</div>`;
+      attachSlotEvents(slot, idx, 'xi');
+      rowEl.appendChild(slot);
+      idx++;
+    });
+    pitch.appendChild(rowEl);
+  });
+  for (let i = 0; i < XI_SIZE; i++) renderXISlot(i);
 }
 
 function renderXISlot(idx) {
@@ -1517,6 +1559,7 @@ function downloadPDF() {
 ════════════════════════════════════════════ */
 buildPool();
 buildKaderGrid();
+buildFormationPicker();
 buildXI();
 updateBadges();
 loadPhotosAsync();
