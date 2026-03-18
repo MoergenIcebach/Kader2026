@@ -121,7 +121,13 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-3);
-      margin-bottom: 10px;
+      margin-bottom: 4px;
+    }
+    .pool-mobile-hint {
+      display: none;
+      font-size: 0.65rem;
+      color: var(--text-3);
+      margin-bottom: 8px;
     }
     .pool-search {
       width: 100%;
@@ -589,6 +595,15 @@
       background: rgba(207,176,120,0.07);
       box-shadow: 0 0 0 1px rgba(207,176,120,0.25);
     }
+    .squad-slot.drop-ready {
+      border-color: rgba(207,176,120,0.5);
+      border-style: dashed;
+      background: rgba(207,176,120,0.05);
+    }
+    .tap-selected {
+      box-shadow: 0 0 0 2px var(--gold) !important;
+      border-color: var(--gold) !important;
+    }
     .xi-slot.drag-over {
       border-color: var(--gold);
       background: rgba(207,176,120,0.18);
@@ -780,6 +795,9 @@
       .btn { padding: 7px 12px; font-size: 0.72rem; }
       .status-msg { display: none; }
 
+      /* Pool hint */
+      .pool-mobile-hint { display: block; }
+
       /* Kader grid tighter */
       .kader-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -871,6 +889,7 @@
   <aside class="pool-panel">
     <div class="pool-header">
       <div class="pool-label">Player Pool</div>
+      <div class="pool-mobile-hint">Tippe Spieler → dann Slot im Kader</div>
       <div class="search-wrap">
         <span class="search-icon">⌕</span>
         <input class="pool-search" id="pool-search" type="text" placeholder="Search player..." />
@@ -1337,6 +1356,12 @@ function buildPool() {
         <span class="pos-pill pill-${g.key}">${p.pos.split('/')[0].trim()}</span>
       `;
       card.addEventListener('dragstart', onPoolDragStart);
+      card.addEventListener('click', () => {
+        if (isUsed(p.id)) return;
+        if (tapSel?.pid === p.id) { clearTapSelect(); return; }
+        tapSelectPlayer(p.id, 'pool', null);
+        if (window.innerWidth <= 768) switchTab('kader');
+      });
       body.appendChild(card);
     });
   });
@@ -1368,6 +1393,10 @@ function buildKaderGrid() {
     el.id          = `slot-${slot.id}`;
     el.dataset.slotId = slot.id;
     attachSlotEvents(el, slot.id, 'kader');
+    el.addEventListener('click', e => {
+      if (e.target.closest('.slot-remove')) return;
+      handleSlotTap('kader', slot.id);
+    });
     grid.appendChild(el);
     renderKaderSlot(slot.id);
   });
@@ -1448,6 +1477,11 @@ function buildXI() {
       slot.dataset.xiIndex = idx;
       slot.innerHTML = `<div class="slot-pos-label">${pos}</div><div class="slot-drop-hint">drag here</div>`;
       attachSlotEvents(slot, idx, 'xi');
+      const _idx = idx;
+      slot.addEventListener('click', e => {
+        if (e.target.closest('.slot-remove')) return;
+        handleSlotTap('xi', _idx);
+      });
       rowEl.appendChild(slot);
       idx++;
     });
@@ -1496,6 +1530,63 @@ function attachSlotEvents(el, target, type) {
     if (type === 'kader') onKaderDrop(e, target);
     else onXIDrop(e, target);
   });
+}
+
+/* ════════════════════════════════════════════
+   TAP-TO-SELECT (mobile)
+════════════════════════════════════════════ */
+let tapSel = null; // { pid, source: 'pool'|'kader', fromKader: slotId|null }
+
+function tapSelectPlayer(pid, source, fromKader) {
+  clearTapSelect();
+  tapSel = { pid, source, fromKader };
+  if (source === 'pool') {
+    document.querySelector(`.player-card[data-pid="${pid}"]`)?.classList.add('tap-selected');
+    highlightEmptyKaderSlots(true);
+  } else {
+    document.getElementById(`slot-${fromKader}`)?.classList.add('tap-selected');
+    highlightEmptyXISlots(true);
+  }
+}
+
+function clearTapSelect() {
+  if (!tapSel) return;
+  document.querySelectorAll('.tap-selected').forEach(el => el.classList.remove('tap-selected'));
+  highlightEmptyKaderSlots(false);
+  highlightEmptyXISlots(false);
+  tapSel = null;
+}
+
+function highlightEmptyKaderSlots(on) {
+  document.querySelectorAll('.squad-slot:not(.filled)').forEach(s =>
+    s.classList.toggle('drop-ready', on)
+  );
+}
+
+function handleSlotTap(type, target) {
+  if (type === 'kader') {
+    if (!tapSel) {
+      const pid = kaderData[target];
+      if (pid) {
+        tapSelectPlayer(pid, 'kader', target);
+        if (window.innerWidth <= 768) switchTab('xi');
+      }
+      return;
+    }
+    if (tapSel.source === 'pool' || tapSel.source === 'kader') {
+      dragPayload = tapSel.source === 'pool'
+        ? { pid: tapSel.pid, fromPool: true }
+        : { pid: tapSel.pid, fromKader: tapSel.fromKader };
+      onKaderDrop({ preventDefault: () => {} }, target);
+      clearTapSelect();
+    }
+  } else { // xi
+    if (!tapSel) return;
+    if (tapSel.source === 'pool') { showStatus('Add to Kader first!', 'warn'); clearTapSelect(); return; }
+    dragPayload = { pid: tapSel.pid, fromKader: tapSel.fromKader };
+    onXIDrop({ preventDefault: () => {} }, target);
+    clearTapSelect();
+  }
 }
 
 /* ════════════════════════════════════════════
