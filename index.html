@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Germany 2026 Kader Builder</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    /* ─── DESIGN TOKENS ─── */
+    :root {
+      --bg:         #000000;
+      --bg-1:       #111111;
+      --bg-2:       #1c1c1e;
+      --bg-3:       #2c2c2e;
+      --border:     rgba(255,255,255,0.09);
+      --border-md:  rgba(255,255,255,0.18);
+      --text:       #f5f5f7;
+      --text-2:     rgba(245,245,247,0.6);
+      --text-3:     rgba(245,245,247,0.32);
+      --red:        #c8102e;
+      --red-dim:    rgba(200,16,46,0.18);
+      --gold:       #cfb078;
+      --gold-dim:   rgba(207,176,120,0.15);
+      --green:      #34c759;
+      --green-dim:  rgba(52,199,89,0.15);
+      --blue:       #0a84ff;
+      --blue-dim:   rgba(10,132,255,0.15);
+      --purple:     #bf5af2;
+      --purple-dim: rgba(191,90,242,0.15);
+      --r:          12px;
+      --r-sm:       8px;
+      --r-xs:       5px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: #000;
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-flag {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-radius: 4px;
+      overflow: hidden;
+      width: 32px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .header-flag span {
+      flex: 1;
+      display: block;
+    }
+    .header-flag .f1 { background: #000; }
+    .header-flag .f2 { background: #c8102e; }
+    .header-flag .f3 { background: #ffce00; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #fff;
+    }
+    .header-title span { color: var(--gold); }
+    .header-sub {
+      font-size: 0.72rem;
+      color: var(--text-3);
+      margin-top: 1px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .header-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--gold);
+      background: var(--gold-dim);
+      border: 1px solid rgba(207,176,120,0.25);
+      padding: 4px 12px;
+      border-radius: 100px;
+      letter-spacing: 0.03em;
+    }
+
+    /* ─── APP LAYOUT ─── */
+    .app {
+      display: flex;
+      gap: 1px;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+    }
+
+    /* ─── LEFT: PLAYER POOL ─── */
+    .pool-panel {
+      width: 288px;
+      min-width: 260px;
+      flex-shrink: 0;
+      background: var(--bg-1);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pool-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .pool-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 10px;
+    }
+    .pool-search {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text);
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.15s;
+      position: relative;
+    }
+    .pool-search:focus { border-color: var(--border-md); }
+    .pool-search::placeholder { color: var(--text-3); }
+    .search-wrap { position: relative; }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      color: var(--text-3);
+      pointer-events: none;
+    }
+    .pool-groups {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0 16px;
+    }
+    .pool-groups::-webkit-scrollbar { width: 3px; }
+    .pool-groups::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+
+    /* position group */
+    .pos-group { margin: 0 0 2px; }
+    .pos-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s;
+    }
+    .pos-group-header:hover { background: var(--bg-2); }
+    .pos-group-left { display: flex; align-items: center; gap: 8px; }
+    .pos-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pos-GK  .pos-dot { background: var(--blue); }
+    .pos-DEF .pos-dot { background: var(--green); }
+    .pos-MID .pos-dot { background: var(--purple); }
+    .pos-FWD .pos-dot { background: var(--red); }
+    .pos-group-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-2);
+    }
+    .pos-count {
+      font-size: 0.68rem;
+      color: var(--text-3);
+      margin-left: 4px;
+    }
+    .pos-chevron {
+      font-size: 0.65rem;
+      color: var(--text-3);
+      transition: transform 0.2s;
+    }
+    .pos-group-header.open .pos-chevron { transform: rotate(180deg); }
+    .pos-group-body {
+      display: none;
+      padding: 2px 8px 4px;
+    }
+    .pos-group-body.open { display: block; }
+
+    /* player card in pool */
+    .player-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--r-sm);
+      cursor: grab;
+      transition: background 0.1s;
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+    }
+    .player-card:hover { background: var(--bg-2); border-color: var(--border); }
+    .player-card:active { cursor: grabbing; }
+    .player-card.used {
+      opacity: 0.28;
+      pointer-events: none;
+    }
+    .club-logo {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      object-fit: contain;
+      flex-shrink: 0;
+      background: var(--bg-3);
+    }
+    .club-logo-fallback {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: var(--bg-3);
+      color: var(--text-2);
+    }
+    .player-info { flex: 1; min-width: 0; }
+    .player-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .player-club {
+      font-size: 0.65rem;
+      color: var(--text-3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .pos-pill {
+      flex-shrink: 0;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 100px;
+      letter-spacing: 0.03em;
+    }
+    .pill-GK  { background: var(--blue-dim);   color: var(--blue); }
+    .pill-DEF { background: var(--green-dim);  color: var(--green); }
+    .pill-MID { background: var(--purple-dim); color: var(--purple); }
+    .pill-FWD { background: var(--red-dim);    color: #ff453a; }
+
+    /* ─── RIGHT: BUILDER PANEL ─── */
+    .builder-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+    #export-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+    }
+    #export-area::-webkit-scrollbar { width: 4px; }
+    #export-area::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 4px; }
+
+    /* section header */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .counter-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+    }
+    .counter-badge.complete { border-color: rgba(52,199,89,0.4); color: var(--green); }
+    .counter-badge.warn     { border-color: rgba(255,165,0,0.4); color: #ff9f0a; }
+
+    /* ─── KADER GRID ─── */
+    .kader-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+      gap: 6px;
+      margin-bottom: 32px;
+    }
+
+    /* slot */
+    .squad-slot {
+      min-height: 68px;
+      border-radius: var(--r-sm);
+      border: 1px dashed var(--border);
+      background: var(--bg-1);
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+      cursor: default;
+    }
+    .squad-slot.drag-over {
+      border-color: var(--border-md);
+      border-style: solid;
+      background: var(--bg-2);
+    }
+    .squad-slot.filled {
+      border-style: solid;
+      border-color: var(--border);
+      background: var(--bg-2);
+    }
+    .slot-pos-label {
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+    .slot-body {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex: 1;
+    }
+    .slot-logo {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      border-radius: 3px;
+      background: var(--bg-3);
+      flex-shrink: 0;
+    }
+    .slot-logo-fb {
+      width: 22px;
+      height: 22px;
+      border-radius: 3px;
+      background: var(--bg-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5rem;
+      font-weight: 800;
+      color: var(--text-3);
+      flex-shrink: 0;
+    }
+    .slot-info .sname {
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--text);
+    }
+    .slot-info .sclub {
+      font-size: 0.6rem;
+      color: var(--text-3);
+      margin-top: 1px;
+    }
+    .slot-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: none;
+      border: none;
+      color: var(--text-3);
+      cursor: pointer;
+      font-size: 0.65rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+      line-height: 1;
+    }
+    .slot-remove:hover { background: var(--bg-3); color: #ff453a; }
+
+    /* ─── XI SECTION ─── */
+    .xi-wrapper { margin-bottom: 8px; }
+
+    .pitch {
+      background:
+        linear-gradient(180deg, #1a4d2b 0%, #1e5c30 50%, #1a4d2b 100%);
+      border-radius: var(--r);
+      padding: 20px 16px 24px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Pitch line decorations */
+    .pitch::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 8%;
+      right: 8%;
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-50%);
+    }
+    .pitch::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 64px;
+      height: 64px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .pitch-line-top {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40%;
+      height: 48px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .pitch-line-bot {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40%;
+      height: 48px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+    }
+
+    /* formation row */
+    .xi-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .xi-row:last-child { margin-bottom: 0; }
+
+    /* xi slot */
+    .xi-slot {
+      width: 90px;
+      min-height: 76px;
+      border-radius: var(--r-sm);
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 6px;
+      transition: all 0.15s;
+      position: relative;
+      cursor: default;
+    }
+    .xi-slot .slot-pos-label {
+      text-align: center;
+      width: 100%;
+    }
+    .xi-slot.drag-over {
+      border-color: var(--gold);
+      background: rgba(207,176,120,0.12);
+    }
+    .xi-slot.filled {
+      border-color: rgba(52,199,89,0.5);
+      background: rgba(52,199,89,0.08);
+    }
+    .xi-slot .slot-body {
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+    .xi-slot .slot-info .sname {
+      font-size: 0.68rem;
+      text-align: center;
+    }
+    .xi-slot .slot-info .sclub {
+      display: none; /* keep pitch clean */
+    }
+
+    /* formation tag */
+    .formation-tag {
+      font-size: 0.64rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.3);
+      text-align: right;
+      margin-bottom: 6px;
+    }
+
+    /* ─── CONTROLS BAR ─── */
+    .controls-bar {
+      padding: 14px 28px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text-2);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+      letter-spacing: 0.01em;
+    }
+    .btn:hover { background: var(--bg-3); color: var(--text); border-color: var(--border-md); }
+    .btn-primary {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #a00c24; border-color: #a00c24; color: #fff; }
+    .btn-gold {
+      background: var(--gold-dim);
+      border-color: rgba(207,176,120,0.3);
+      color: var(--gold);
+    }
+    .btn-gold:hover { background: rgba(207,176,120,0.25); color: var(--gold); }
+    .sep { flex: 1; }
+    .status-msg {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--green);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .status-msg.visible { opacity: 1; }
+    .status-msg.warn { color: #ff9f0a; }
+
+    /* ─── DRAG STATES ─── */
+    .sortable-ghost { opacity: 0.25; }
+    .sortable-chosen { transform: scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 999; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 860px) {
+      .app { flex-direction: column; height: auto; overflow: visible; }
+      .pool-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); height: 280px; }
+      .builder-panel { height: auto; }
+      #export-area { overflow-y: visible; }
+      .xi-slot { width: 72px; min-height: 62px; }
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="header-left">
+    <div class="header-flag">
+      <span class="f1"></span>
+      <span class="f2"></span>
+      <span class="f3"></span>
+    </div>
+    <div>
+      <div class="header-title">DEUTSCHLAND <span>2026</span></div>
+      <div class="header-sub">World Cup Kader Builder</div>
+    </div>
+  </div>
+  <div class="header-badge">WM 2026 · USA · Canada · Mexico</div>
+</header>
+
+<div class="app">
+
+  <!-- ══════════════ LEFT: POOL ══════════════ -->
+  <aside class="pool-panel">
+    <div class="pool-header">
+      <div class="pool-label">Player Pool</div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input class="pool-search" id="pool-search" type="text" placeholder="Search player..." />
+      </div>
+    </div>
+    <div class="pool-groups" id="pool-container"></div>
+  </aside>
+
+  <!-- ══════════════ RIGHT: BUILDER ══════════════ -->
+  <div class="builder-panel">
+    <div id="export-area">
+
+      <!-- ─── KADER ─── -->
+      <div class="section-head">
+        <div class="section-title">Kader (26 + 3 Provisional)</div>
+        <span class="counter-badge" id="kader-badge">0 / 29</span>
+      </div>
+      <div class="kader-grid" id="kader-grid"></div>
+
+      <!-- ─── STARTING XI ─── -->
+      <div class="xi-wrapper">
+        <div class="section-head">
+          <div class="section-title">Starting XI</div>
+          <span class="counter-badge" id="xi-badge">0 / 11</span>
+        </div>
+        <div class="formation-tag">4 – 2 – 3 – 1</div>
+        <div class="pitch" id="xi-pitch">
+          <div class="pitch-line-top"></div>
+          <div class="pitch-line-bot"></div>
+
+          <!-- ST -->
+          <div class="xi-row">
+            <div class="xi-slot" data-pos="ST" data-xi-index="0"><div class="slot-pos-label">ST</div></div>
+          </div>
+          <!-- LW CAM RW -->
+          <div class="xi-row">
+            <div class="xi-slot" data-pos="LW"  data-xi-index="1"><div class="slot-pos-label">LW</div></div>
+            <div class="xi-slot" data-pos="CAM" data-xi-index="2"><div class="slot-pos-label">CAM</div></div>
+            <div class="xi-slot" data-pos="RW"  data-xi-index="3"><div class="slot-pos-label">RW</div></div>
+          </div>
+          <!-- DM DM -->
+          <div class="xi-row">
+            <div class="xi-slot" data-pos="DM" data-xi-index="4"><div class="slot-pos-label">DM</div></div>
+            <div class="xi-slot" data-pos="DM" data-xi-index="5"><div class="slot-pos-label">DM</div></div>
+          </div>
+          <!-- RB CB CB LB -->
+          <div class="xi-row">
+            <div class="xi-slot" data-pos="RB" data-xi-index="6"><div class="slot-pos-label">RB</div></div>
+            <div class="xi-slot" data-pos="CB" data-xi-index="7"><div class="slot-pos-label">CB</div></div>
+            <div class="xi-slot" data-pos="CB" data-xi-index="8"><div class="slot-pos-label">CB</div></div>
+            <div class="xi-slot" data-pos="LB" data-xi-index="9"><div class="slot-pos-label">LB</div></div>
+          </div>
+          <!-- GK -->
+          <div class="xi-row">
+            <div class="xi-slot" data-pos="GK" data-xi-index="10"><div class="slot-pos-label">GK</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#export-area -->
+
+    <!-- ─── CONTROLS BAR ─── -->
+    <div class="controls-bar">
+      <button class="btn" onclick="resetSquad()">↺ Reset Kader</button>
+      <button class="btn" onclick="clearXI()">✕ Clear XI</button>
+      <div class="sep"></div>
+      <span class="status-msg" id="status-msg"></span>
+      <button class="btn btn-gold" onclick="downloadPNG()">↓ PNG</button>
+      <button class="btn btn-primary" onclick="downloadPDF()">↓ PDF</button>
+    </div>
+  </div>
+
+</div><!-- /.app -->
+
+<script>
+/* ════════════════════════════════════════════
+   CLUB LOGO MAPPING (football-data.org CDN)
+════════════════════════════════════════════ */
+const LOGO_BASE = 'https://crests.football-data.org/';
+const CLUB_IDS = {
+  'TSG Hoffenheim':           167,
+  'FC Girona (loan Barça)':   298,
+  'VfB Stuttgart':            10,
+  'SC Freiburg':              17,
+  'FC Augsburg':              107,
+  'FC Bayern München':        5,
+  'Nottingham Forest':        351,
+  'Borussia Mönchengladbach': 18,
+  'Borussia Dortmund':        4,
+  'RB Leipzig':               721,
+  'Real Madrid':              86,
+  'Eintracht Frankfurt':      19,
+  '1. FSV Mainz 05':          163,
+  'Bayer Leverkusen':         3,
+  '1. FC Köln':               1,
+  'Inter Milan':              108,
+  'AC Fiorentina':            99,
+  'Club Brugge':              851,
+  'FC Arsenal':               57,
+  'Newcastle United':         67,
+  'Galatasaray':              1877,
+  'AC Milan':                 98,
+  'FC Liverpool':             64,
+  'AS Monaco':                548,
+  'Leeds United':             341,
+};
+
+function logoUrl(club) {
+  const id = CLUB_IDS[club];
+  return id ? `${LOGO_BASE}${id}.png` : null;
+}
+
+function clubInitials(club) {
+  const words = club.replace(/[()]/g, '').split(' ').filter(w => w.length > 1 && !/^(FC|SC|AC|VfB|TSG|RB|1\.)$/.test(w));
+  return (words[0]?.[0] || '') + (words[1]?.[0] || '');
+}
+
+/* ════════════════════════════════════════════
+   PLAYERS DATA
+════════════════════════════════════════════ */
+const PLAYERS = [
+  // GK
+  { id:'p1',  name:'Oliver Baumann',        club:'TSG Hoffenheim',          pos:'GK',              group:'GK' },
+  { id:'p2',  name:'Marc-André ter Stegen', club:'FC Girona (loan Barça)',  pos:'GK',              group:'GK' },
+  { id:'p3',  name:'Alexander Nübel',       club:'VfB Stuttgart',           pos:'GK',              group:'GK' },
+  { id:'p4',  name:'Noah Atubolu',          club:'SC Freiburg',             pos:'GK',              group:'GK' },
+  { id:'p5',  name:'Finn Dahmen',           club:'FC Augsburg',             pos:'GK',              group:'GK' },
+  { id:'p6',  name:'Jonas Urbig',           club:'FC Bayern München',       pos:'GK',              group:'GK' },
+  { id:'p7',  name:'Stefan Ortega',         club:'Nottingham Forest',       pos:'GK',              group:'GK' },
+  { id:'p8',  name:'Moritz Nicolas',        club:'Borussia Mönchengladbach',pos:'GK',              group:'GK' },
+  // DEF
+  { id:'p9',  name:'Joshua Kimmich',        club:'FC Bayern München',       pos:'RB / DM',         group:'DEF' },
+  { id:'p10', name:'Jonathan Tah',          club:'FC Bayern München',       pos:'CB',              group:'DEF' },
+  { id:'p11', name:'Nico Schlotterbeck',    club:'Borussia Dortmund',       pos:'CB',              group:'DEF' },
+  { id:'p12', name:'David Raum',            club:'RB Leipzig',              pos:'LB',              group:'DEF' },
+  { id:'p13', name:'Antonio Rüdiger',       club:'Real Madrid',             pos:'CB',              group:'DEF' },
+  { id:'p14', name:'Waldemar Anton',        club:'Borussia Dortmund',       pos:'CB',              group:'DEF' },
+  { id:'p15', name:'Malick Thiaw',          club:'Newcastle United',        pos:'CB',              group:'DEF' },
+  { id:'p16', name:'Ridle Baku',            club:'RB Leipzig',              pos:'RB / LB',         group:'DEF' },
+  { id:'p17', name:'Max. Mittelstädt',      club:'VfB Stuttgart',           pos:'LB',              group:'DEF' },
+  { id:'p18', name:'Nathaniel Brown',       club:'Eintracht Frankfurt',     pos:'LB',              group:'DEF' },
+  { id:'p19', name:'Yann Bisseck',          club:'Inter Milan',             pos:'CB',              group:'DEF' },
+  { id:'p20', name:'Robin Koch',            club:'Eintracht Frankfurt',     pos:'CB',              group:'DEF' },
+  { id:'p21', name:'Benjamin Henrichs',     club:'RB Leipzig',              pos:'RB / versatile',  group:'DEF' },
+  { id:'p22', name:'Thilo Kehrer',          club:'AS Monaco',               pos:'CB / RB',         group:'DEF' },
+  { id:'p23', name:'Nnamdi Collins',        club:'Eintracht Frankfurt',     pos:'CB',              group:'DEF' },
+  { id:'p24', name:'Niklas Süle',           club:'Borussia Dortmund',       pos:'CB',              group:'DEF' },
+  { id:'p25', name:'Robin Gosens',          club:'AC Fiorentina',           pos:'LB / wing-back',  group:'DEF' },
+  { id:'p26', name:'Finn Jeltsch',          club:'VfB Stuttgart',           pos:'CB',              group:'DEF' },
+  // MID
+  { id:'p27', name:'Aleksandar Pavlovic',   club:'FC Bayern München',       pos:'DM / CM',         group:'MID' },
+  { id:'p28', name:'Leon Goretzka',         club:'FC Bayern München',       pos:'CM',              group:'MID' },
+  { id:'p29', name:'Felix Nmecha',          club:'Borussia Dortmund',       pos:'CM / AM',         group:'MID' },
+  { id:'p30', name:'Jamal Musiala',         club:'FC Bayern München',       pos:'AM / Winger',     group:'MID' },
+  { id:'p31', name:'Florian Wirtz',         club:'FC Liverpool',            pos:'AM',              group:'MID' },
+  { id:'p32', name:'Angelo Stiller',        club:'VfB Stuttgart',           pos:'DM / CM',         group:'MID' },
+  { id:'p33', name:'Robert Andrich',        club:'Bayer Leverkusen',        pos:'DM',              group:'MID' },
+  { id:'p34', name:'Nadiem Amiri',          club:'1. FSV Mainz 05',         pos:'AM / CM',         group:'MID' },
+  { id:'p35', name:'Lennart Karl',          club:'FC Bayern München',       pos:'CM',              group:'MID' },
+  { id:'p36', name:'Karim Adeyemi',         club:'Borussia Dortmund',       pos:'Winger',          group:'MID' },
+  { id:'p37', name:'Jamie Leweling',        club:'VfB Stuttgart',           pos:'Winger / AM',     group:'MID' },
+  { id:'p38', name:'Tom Bischof',           club:'FC Bayern München',       pos:'AM',              group:'MID' },
+  { id:'p39', name:'Said El Mala',          club:'1. FC Köln',              pos:'AM',              group:'MID' },
+  { id:'p40', name:'Pascal Groß',           club:'Borussia Dortmund',       pos:'CM',              group:'MID' },
+  { id:'p41', name:'Chris Führich',         club:'VfB Stuttgart',           pos:'Winger / AM',     group:'MID' },
+  { id:'p42', name:'Julian Brandt',         club:'Borussia Dortmund',       pos:'AM / CM',         group:'MID' },
+  { id:'p43', name:'Paul Nebel',            club:'1. FSV Mainz 05',         pos:'AM',              group:'MID' },
+  { id:'p44', name:'Assan Ouédraogo',       club:'RB Leipzig',              pos:'AM',              group:'MID' },
+  { id:'p45', name:'Anton Stach',           club:'Leeds United',            pos:'CM',              group:'MID' },
+  { id:'p46', name:'Emre Can',              club:'Borussia Dortmund',       pos:'DM / CM',         group:'MID' },
+  // FWD
+  { id:'p47', name:'Kai Havertz',           club:'FC Arsenal',              pos:'ST / AM',         group:'FWD' },
+  { id:'p48', name:'Nick Woltemade',        club:'Newcastle United',        pos:'ST',              group:'FWD' },
+  { id:'p49', name:'Deniz Undav',           club:'VfB Stuttgart',           pos:'ST',              group:'FWD' },
+  { id:'p50', name:'Serge Gnabry',          club:'FC Bayern München',       pos:'RW / Winger',     group:'FWD' },
+  { id:'p51', name:'Leroy Sané',            club:'Galatasaray',             pos:'RW / LW',         group:'FWD' },
+  { id:'p52', name:'Jonathan Burkardt',     club:'Eintracht Frankfurt',     pos:'ST',              group:'FWD' },
+  { id:'p53', name:'Maximilian Beier',      club:'Borussia Dortmund',       pos:'ST / Winger',     group:'FWD' },
+  { id:'p54', name:'Tim Kleindienst',       club:'Borussia Mönchengladbach',pos:'ST',              group:'FWD' },
+  { id:'p55', name:'Niclas Füllkrug',       club:'AC Milan',                pos:'ST',              group:'FWD' },
+  { id:'p56', name:'Nicolo Tresoldi',       club:'Club Brugge',             pos:'ST',              group:'FWD' },
+];
+
+/* ════════════════════════════════════════════
+   KADER SLOTS CONFIG — 29 slots
+════════════════════════════════════════════ */
+const KADER_SLOTS = [
+  {id:'k0',l:'GK 1'},{id:'k1',l:'GK 2'},{id:'k2',l:'GK 3'},{id:'k3',l:'GK 4'},
+  {id:'k4',l:'CB 1'},{id:'k5',l:'CB 2'},{id:'k6',l:'CB 3'},{id:'k7',l:'CB 4'},{id:'k8',l:'CB 5'},
+  {id:'k9',l:'RB 1'},{id:'k10',l:'RB 2'},{id:'k11',l:'LB 1'},{id:'k12',l:'LB 2'},
+  {id:'k13',l:'DM 1'},{id:'k14',l:'DM 2'},
+  {id:'k15',l:'CM 1'},{id:'k16',l:'CM 2'},{id:'k17',l:'CM 3'},
+  {id:'k18',l:'AM 1'},{id:'k19',l:'AM 2'},
+  {id:'k20',l:'Wing 1'},{id:'k21',l:'Wing 2'},
+  {id:'k22',l:'ST 1'},{id:'k23',l:'ST 2'},{id:'k24',l:'ST 3'},{id:'k25',l:'ST 4'},
+  {id:'k26',l:'+1'},{id:'k27',l:'+2'},{id:'k28',l:'+3'},
+];
+
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+const kaderData = {};
+KADER_SLOTS.forEach(s => kaderData[s.id] = null);
+const XI_SIZE = 11;
+const xiData  = new Array(XI_SIZE).fill(null);
+
+/* ════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════ */
+const getPlayer  = id => PLAYERS.find(p => p.id === id);
+const usedInKader = () => Object.values(kaderData).filter(Boolean);
+const usedInXI    = () => xiData.filter(Boolean);
+const isUsed      = id => usedInKader().includes(id) || usedInXI().includes(id);
+
+let statusTimer;
+function showStatus(msg, type = 'ok') {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg visible' + (type === 'warn' ? ' warn' : '');
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.className = 'status-msg'; }, 2800);
+}
+
+function updateBadges() {
+  const kc = usedInKader().length;
+  const xc = usedInXI().length;
+  const kb = document.getElementById('kader-badge');
+  kb.textContent = `${kc} / 29`;
+  kb.className = 'counter-badge' + (kc === 29 ? ' complete' : kc > 26 ? ' warn' : '');
+  const xb = document.getElementById('xi-badge');
+  xb.textContent = `${xc} / 11`;
+  xb.className = 'counter-badge' + (xc === 11 ? ' complete' : xc > 0 ? ' warn' : '');
+}
+
+function updatePoolUsed() {
+  document.querySelectorAll('.player-card').forEach(c =>
+    c.classList.toggle('used', isUsed(c.dataset.pid))
+  );
+}
+
+/* ════════════════════════════════════════════
+   LOGO ELEMENT HELPERS
+════════════════════════════════════════════ */
+// Unique index for each logo → safe onerror without special chars in attr
+const _logoRegistry = {};
+let _logoIdx = 0;
+
+function registerLogo(club, size, fbCls) {
+  const key = 'lg' + (_logoIdx++);
+  _logoRegistry[key] = { club, size, fbCls };
+  return key;
+}
+
+window._logoError = function(key, img) {
+  const { club, size, fbCls } = _logoRegistry[key] || {};
+  if (!club) return;
+  const d = document.createElement('div');
+  d.className = fbCls;
+  d.style.cssText = `width:${size}px;height:${size}px`;
+  d.textContent = clubInitials(club);
+  img.replaceWith(d);
+};
+
+function makeLogo(club, size = 22, cls = 'slot-logo') {
+  const url = logoUrl(club);
+  if (url) {
+    const key = registerLogo(club, size, 'slot-logo-fb');
+    return `<img class="${cls}" src="${url}" alt=""
+      onerror="_logoError('${key}',this)"
+      width="${size}" height="${size}"
+      style="border-radius:3px;background:var(--bg-3)" />`;
+  }
+  return `<div class="slot-logo-fb" style="width:${size}px;height:${size}px">${clubInitials(club)}</div>`;
+}
+
+function makePoolLogo(club) {
+  const url = logoUrl(club);
+  if (url) {
+    const key = registerLogo(club, 26, 'club-logo-fallback');
+    return `<img class="club-logo" src="${url}" alt=""
+      onerror="_logoError('${key}',this)"
+      width="26" height="26" />`;
+  }
+  return `<div class="club-logo-fallback">${clubInitials(club)}</div>`;
+}
+
+/* ════════════════════════════════════════════
+   BUILD POOL
+════════════════════════════════════════════ */
+const GROUP_META = [
+  { key:'GK',  label:'Goalkeepers' },
+  { key:'DEF', label:'Defenders'   },
+  { key:'MID', label:'Midfielders' },
+  { key:'FWD', label:'Forwards'    },
+];
+
+function buildPool() {
+  const container = document.getElementById('pool-container');
+  container.innerHTML = '';
+
+  GROUP_META.forEach(g => {
+    const players = PLAYERS.filter(p => p.group === g.key);
+    const wrap = document.createElement('div');
+    wrap.className = `pos-group pos-${g.key}`;
+    wrap.innerHTML = `
+      <div class="pos-group-header open" data-group="${g.key}" onclick="toggleGroup(this)">
+        <div class="pos-group-left">
+          <div class="pos-dot"></div>
+          <span class="pos-group-name">${g.label}</span>
+          <span class="pos-count">${players.length}</span>
+        </div>
+        <span class="pos-chevron">▾</span>
+      </div>
+      <div class="pos-group-body open" id="pool-${g.key}"></div>
+    `;
+    container.appendChild(wrap);
+
+    const body = wrap.querySelector('.pos-group-body');
+    players.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'player-card';
+      card.dataset.pid   = p.id;
+      card.dataset.group = g.key;
+      card.draggable = true;
+      card.innerHTML = `
+        ${makePoolLogo(p.club)}
+        <div class="player-info">
+          <div class="player-name">${p.name}</div>
+          <div class="player-club">${p.club}</div>
+        </div>
+        <span class="pos-pill pill-${g.key}">${p.pos.split('/')[0].trim()}</span>
+      `;
+      card.addEventListener('dragstart', onPoolDragStart);
+      body.appendChild(card);
+    });
+  });
+}
+
+function toggleGroup(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('pool-search').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.player-card').forEach(c => {
+      c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+});
+
+/* ════════════════════════════════════════════
+   BUILD KADER GRID
+════════════════════════════════════════════ */
+function buildKaderGrid() {
+  const grid = document.getElementById('kader-grid');
+  grid.innerHTML = '';
+  KADER_SLOTS.forEach(slot => {
+    const el = document.createElement('div');
+    el.className   = 'squad-slot';
+    el.id          = `slot-${slot.id}`;
+    el.dataset.slotId = slot.id;
+    attachSlotEvents(el, slot.id, 'kader');
+    grid.appendChild(el);
+    renderKaderSlot(slot.id);
+  });
+}
+
+function renderKaderSlot(slotId) {
+  const el   = document.getElementById(`slot-${slotId}`);
+  if (!el) return;
+  const pid  = kaderData[slotId];
+  const slot = KADER_SLOTS.find(s => s.id === slotId);
+
+  if (!pid) {
+    el.className = 'squad-slot';
+    el.innerHTML = `<div class="slot-pos-label">${slot.l}</div>`;
+  } else {
+    const p = getPlayer(pid);
+    el.className = 'squad-slot filled';
+    el.innerHTML = `
+      <div class="slot-pos-label">${slot.l}</div>
+      <div class="slot-body">
+        ${makeLogo(p.club, 22, 'slot-logo')}
+        <div class="slot-info">
+          <div class="sname">${p.name}</div>
+          <div class="sclub">${p.pos}</div>
+        </div>
+      </div>
+      <button class="slot-remove" onclick="removeFromKader('${slotId}')">✕</button>
+    `;
+    const inner = el.querySelector('.slot-body');
+    inner.draggable = true;
+    inner.dataset.pid = pid;
+    inner.dataset.fromKader = slotId;
+    inner.addEventListener('dragstart', onKaderCardDragStart);
+  }
+  attachSlotEvents(el, slotId, 'kader');
+}
+
+/* ════════════════════════════════════════════
+   BUILD XI
+════════════════════════════════════════════ */
+function buildXI() {
+  document.querySelectorAll('.xi-slot').forEach(slot => {
+    const idx = parseInt(slot.dataset.xiIndex);
+    attachSlotEvents(slot, idx, 'xi');
+    renderXISlot(idx);
+  });
+}
+
+function renderXISlot(idx) {
+  const slot = document.querySelector(`.xi-slot[data-xi-index="${idx}"]`);
+  if (!slot) return;
+  const posLabel = slot.dataset.pos;
+  const pid      = xiData[idx];
+
+  if (!pid) {
+    slot.className = 'xi-slot';
+    slot.innerHTML = `<div class="slot-pos-label">${posLabel}</div>`;
+  } else {
+    const p = getPlayer(pid);
+    slot.className = 'xi-slot filled';
+    slot.innerHTML = `
+      <div class="slot-pos-label">${posLabel}</div>
+      <div class="slot-body">
+        ${makeLogo(p.club, 20, 'slot-logo')}
+        <div class="slot-info"><div class="sname">${p.name}</div></div>
+      </div>
+      <button class="slot-remove" onclick="removeFromXI(${idx})">✕</button>
+    `;
+    const inner = slot.querySelector('.slot-body');
+    inner.draggable = true;
+    inner.dataset.pid    = pid;
+    inner.dataset.fromXi = idx;
+    inner.addEventListener('dragstart', onXICardDragStart);
+  }
+  attachSlotEvents(slot, idx, 'xi');
+}
+
+/* ════════════════════════════════════════════
+   EVENT ATTACHMENT
+════════════════════════════════════════════ */
+function attachSlotEvents(el, target, type) {
+  el.addEventListener('dragover',  e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    el.classList.remove('drag-over');
+    if (type === 'kader') onKaderDrop(e, target);
+    else onXIDrop(e, target);
+  });
+}
+
+/* ════════════════════════════════════════════
+   DRAG & DROP
+════════════════════════════════════════════ */
+let dragPayload = null;
+
+function onPoolDragStart(e) {
+  const pid = e.currentTarget.dataset.pid;
+  if (isUsed(pid)) { e.preventDefault(); return; }
+  dragPayload = { pid, fromPool: true };
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onKaderCardDragStart(e) {
+  const c = e.currentTarget;
+  dragPayload = { pid: c.dataset.pid, fromKader: c.dataset.fromKader };
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onXICardDragStart(e) {
+  const c = e.currentTarget;
+  dragPayload = { pid: c.dataset.pid, fromXI: parseInt(c.dataset.fromXi) };
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onKaderDrop(e, slotId) {
+  e.preventDefault();
+  if (!dragPayload) return;
+  const { pid, fromPool, fromKader } = dragPayload;
+  const existing = kaderData[slotId];
+
+  if (fromPool && isUsed(pid))          { showStatus('Already in squad!', 'warn'); dragPayload = null; return; }
+  if (fromPool && !existing && usedInKader().length >= 29) { showStatus('Kader is full (29/29)!', 'warn'); dragPayload = null; return; }
+
+  if (existing && existing !== pid) {
+    if (fromKader) { kaderData[fromKader] = existing; renderKaderSlot(fromKader); }
+    else           { showStatus('Slot occupied!', 'warn'); dragPayload = null; return; }
+  } else if (fromKader) {
+    kaderData[fromKader] = null; renderKaderSlot(fromKader);
+  }
+
+  kaderData[slotId] = pid;
+  renderKaderSlot(slotId);
+  updatePoolUsed();
+  updateBadges();
+  dragPayload = null;
+}
+
+function onXIDrop(e, idx) {
+  e.preventDefault();
+  if (!dragPayload) return;
+  const { pid, fromPool, fromKader, fromXI } = dragPayload;
+
+  if (fromPool) { showStatus('Add to Kader first!', 'warn'); dragPayload = null; return; }
+  if (fromKader && !usedInKader().includes(pid)) { showStatus('Must be in Kader!', 'warn'); dragPayload = null; return; }
+
+  const existingTarget = xiData[idx];
+  const alreadyXiIdx  = xiData.indexOf(pid);
+
+  if (alreadyXiIdx !== -1 && alreadyXiIdx !== idx) {
+    xiData[alreadyXiIdx] = existingTarget;
+    renderXISlot(alreadyXiIdx);
+  } else if (fromXI !== undefined && fromXI !== idx) {
+    xiData[fromXI] = existingTarget;
+    renderXISlot(fromXI);
+  }
+
+  xiData[idx] = pid;
+  renderXISlot(idx);
+  updatePoolUsed();
+  updateBadges();
+  if (usedInXI().length === 11) showStatus('Starting XI complete! 🎉');
+  dragPayload = null;
+}
+
+/* ════════════════════════════════════════════
+   REMOVE
+════════════════════════════════════════════ */
+function removeFromKader(slotId) {
+  const pid = kaderData[slotId];
+  if (!pid) return;
+  const xi = xiData.indexOf(pid);
+  if (xi !== -1) { xiData[xi] = null; renderXISlot(xi); }
+  kaderData[slotId] = null;
+  renderKaderSlot(slotId);
+  updatePoolUsed();
+  updateBadges();
+}
+function removeFromXI(idx) {
+  xiData[idx] = null;
+  renderXISlot(idx);
+  updatePoolUsed();
+  updateBadges();
+}
+
+/* ════════════════════════════════════════════
+   RESET
+════════════════════════════════════════════ */
+function resetSquad() {
+  KADER_SLOTS.forEach(s => { kaderData[s.id] = null; renderKaderSlot(s.id); });
+  xiData.fill(null);
+  for (let i = 0; i < XI_SIZE; i++) renderXISlot(i);
+  updatePoolUsed();
+  updateBadges();
+  showStatus('Kader reset.');
+}
+function clearXI() {
+  xiData.fill(null);
+  for (let i = 0; i < XI_SIZE; i++) renderXISlot(i);
+  updatePoolUsed();
+  updateBadges();
+  showStatus('Starting XI cleared.');
+}
+
+/* ════════════════════════════════════════════
+   EXPORT
+════════════════════════════════════════════ */
+function downloadPNG() {
+  if (!usedInKader().length) { alert('Your Kader is empty!'); return; }
+  html2canvas(document.getElementById('export-area'), {
+    backgroundColor: '#000000',
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+  }).then(canvas => {
+    const a = document.createElement('a');
+    a.download = 'Germany_2026_MyKader.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    showStatus('PNG saved ✓');
+  });
+}
+function downloadPDF() {
+  if (!usedInKader().length) { alert('Your Kader is empty!'); return; }
+  html2canvas(document.getElementById('export-area'), {
+    backgroundColor: '#000000',
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+  }).then(canvas => {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    pdf.setFillColor(0, 0, 0);
+    pdf.rect(0, 0, 297, 210, 'F');
+    pdf.setFontSize(16);
+    pdf.setTextColor(207, 176, 120);
+    pdf.text('MY GERMANY 2026 WORLD CUP KADER', 148.5, 12, { align: 'center' });
+    pdf.setFontSize(8);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text('FIFA World Cup 2026 · USA · Canada · Mexico', 148.5, 18, { align: 'center' });
+    const imgData = canvas.toDataURL('image/png');
+    const pW = 275, pH = (canvas.height / canvas.width) * pW;
+    pdf.addImage(imgData, 'PNG', 11, 22, pW, Math.min(pH, 180));
+    pdf.save('Germany_2026_MyKader.pdf');
+    showStatus('PDF saved ✓');
+  });
+}
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+buildPool();
+buildKaderGrid();
+buildXI();
+updateBadges();
+</script>
+</body>
+</html>
